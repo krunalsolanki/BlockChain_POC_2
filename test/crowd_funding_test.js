@@ -1,4 +1,5 @@
 let CrowdFundingWithDeadline = artifacts.require('./TestCrowdFundingWithDeadline')
+const BigNumber = require('bignumber.js')
 
 contract('CrowdFundingWithDeadline', function(accounts) {
 
@@ -6,23 +7,23 @@ contract('CrowdFundingWithDeadline', function(accounts) {
     let contractCreator = accounts[0];
     let beneficiary = accounts[1];
 
-    const ONE_ETH = 1000000000000000000;
-    const ERROR_MSG = 'VM Exception while processing transaction: revert';
-    const ONGOING_STATE = '0';
-    const FAILED_STATE = '1';
-    const SUCCEEDED_STATE = '2';
-    const PAID_OUT_STATE = '3';
+    const ONE_ETH = new BigNumber(1000000000000000000);
+    const ERROR_MSG = 'Returned error: VM Exception while processing transaction: revert';
+    const ONGOING_STATE = 0;
+    const FAILED_STATE = 1;
+    const SUCCEEDED_STATE = 2;
+    const PAID_OUT_STATE = 3;
 
     beforeEach(async function() {
         contract = await CrowdFundingWithDeadline.new('funding', 1, 10, beneficiary, {from: contractCreator, gas: 2000000});
     });
 
     it('contract is initialized', async function() {
-        let campaignName = await contract.name.call()
-        expect(campaignName).to.equal('funding');
+        let contractName = await contract.name.call()
+        expect(contractName).to.equal('funding');
 
         let targetAmount = await contract.targetAmount.call()
-        expect(targetAmount.toNumber()).to.equal(ONE_ETH);
+        expect(ONE_ETH.isEqualTo(targetAmount)).to.equal(true);
 
         let fundingDeadline = await contract.fundingDeadline.call()
         expect(fundingDeadline.toNumber()).to.equal(600);
@@ -31,17 +32,17 @@ contract('CrowdFundingWithDeadline', function(accounts) {
         expect(actualBeneficiary).to.equal(beneficiary);
 
         let state = await contract.state.call()
-        expect(state.valueOf()).to.equal(ONGOING_STATE);
+        expect(state.valueOf().toNumber()).to.equal(ONGOING_STATE);
     });
 
     it('funds are contributed', async function() {
         await contract.contribute({value: ONE_ETH, from: contractCreator});
 
         let contributed = await contract.amounts.call(contractCreator);
-        expect(contributed.toNumber()).to.equal(ONE_ETH);
+        expect(ONE_ETH.isEqualTo(contributed)).to.equal(true);
 
         let totalCollected = await contract.totalCollected.call();
-        expect(totalCollected.toNumber()).to.equal(ONE_ETH);
+        expect(ONE_ETH.isEqualTo(totalCollected)).to.equal(true);
     });
 
     it('cannot contribute after deadline', async function() {
@@ -63,7 +64,7 @@ contract('CrowdFundingWithDeadline', function(accounts) {
         await contract.finishCrowdFunding();
         let state = await contract.state.call();
 
-        expect(state.valueOf()).to.equal(SUCCEEDED_STATE);
+        expect(state.valueOf().toNumber()).to.equal(SUCCEEDED_STATE);
     });
 
     it('crowdfunding failed', async function() {
@@ -71,7 +72,7 @@ contract('CrowdFundingWithDeadline', function(accounts) {
         await contract.finishCrowdFunding();
         let state = await contract.state.call();
 
-        expect(state.valueOf()).to.equal(FAILED_STATE);
+        expect(state.valueOf().toNumber()).to.equal(FAILED_STATE);
     });
 
     it('collected money paid out', async function() {
@@ -82,11 +83,12 @@ contract('CrowdFundingWithDeadline', function(accounts) {
         let initAmount = await web3.eth.getBalance(beneficiary);
         await contract.collect({from: contractCreator});
 
-        let newBallance = await web3.eth.getBalance(beneficiary);
-        expect(newBallance - initAmount).to.equal(ONE_ETH);
+        let newBalance = await web3.eth.getBalance(beneficiary);
+        let difference = newBalance - initAmount;
+        expect(ONE_ETH.isEqualTo(difference)).to.equal(true);
 
         let fundingState = await contract.state.call()
-        expect(fundingState.valueOf()).to.equal(PAID_OUT_STATE);
+        expect(fundingState.valueOf().toNumber()).to.equal(PAID_OUT_STATE);
     });
 
     it('withdraw funds from the contract', async function() {
@@ -100,12 +102,13 @@ contract('CrowdFundingWithDeadline', function(accounts) {
     });
 
     it('event is emitted', async function() {
-        let watcher = contract.CampaignFinished();
         await contract.setCurrentTime(601);
-        await contract.finishCrowdFunding();
+        const transaction = await contract.finishCrowdFunding();
 
-        let events = await watcher.get();
-        let event = events[0];
+        const events = transaction.logs
+        expect(events.length).to.equal(1);
+
+        const event = events[0]
         expect(event.args.totalCollected.toNumber()).to.equal(0);
         expect(event.args.succeeded).to.equal(false);
     });

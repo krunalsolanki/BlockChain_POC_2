@@ -1,14 +1,14 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 import "./CrowdFundingWithDeadline.sol";
 
 contract TestCrowdFundingWithDeadline is CrowdFundingWithDeadline {
     uint time;
 
     constructor(
-        string contractName,
+        string memory contractName,
         uint targetAmountEth,
         uint durationInMin,
-        address beneficiaryAddress
+        address payable beneficiaryAddress
     )
         CrowdFundingWithDeadline(contractName, targetAmountEth, durationInMin, beneficiaryAddress)
         public

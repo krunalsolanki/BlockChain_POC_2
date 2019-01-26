@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 
 import "./Utils.sol";
 
@@ -17,7 +17,8 @@ contract CrowdFundingWithDeadline {
     string public name;
     uint public targetAmount;
     uint public fundingDeadline;
-    address public beneficiary;
+    address payable public beneficiary;
+    address public owner;
     State public state;
     mapping(address => uint) public amounts;
     bool public collected;
@@ -29,18 +30,19 @@ contract CrowdFundingWithDeadline {
     }
 
     constructor(
-        string campaignName,
+        string memory contractName,
         uint targetAmountEth,
         uint durationInMin,
-        address beneficiaryAddress
+        address payable beneficiaryAddress
     )
         public
     {
-        name = campaignName;
+        name = contractName;
         targetAmount = Utils.etherToWei(targetAmountEth);
-        fundingDeadline = currentTime() + 
+        fundingDeadline = currentTime() +
             Utils.minutesToSeconds(durationInMin);
         beneficiary = beneficiaryAddress;
+        owner = msg.sender;
         state = State.Ongoing;
     }
 
@@ -63,7 +65,7 @@ contract CrowdFundingWithDeadline {
             state = State.Succeeded;
         }
 
-        emit CampaignFinished(this, totalCollected, collected);
+        emit CampaignFinished(address(this), totalCollected, collected);
     }
 
     function collect() public inState(State.Succeeded) {
@@ -102,9 +104,5 @@ contract CrowdFundingWithDeadline {
 
     function isSuccessful() public view returns (bool) {
         return state == State.PaidOut;
-    }
-
-    function name() public view returns (string) {
-        return name;
     }
 }
