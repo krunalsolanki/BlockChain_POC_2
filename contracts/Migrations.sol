@@ -1,11 +1,11 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
 contract Migrations {
-  address public owner;
-  uint public last_completed_migration;
+    address public owner;
+    uint public last_completed_migration;
 
-  constructor() public {
-    owner = msg.sender;
+    constructor()  public {
+     owner = msg.sender;
   }
 
   modifier restricted() {
