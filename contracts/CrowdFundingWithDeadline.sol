@@ -1,7 +1,6 @@
 pragma solidity ^0.5.0;
 
-import "./Utils.sol"; 
-
+import "./Utils.sol";
 
 contract CrowdFundingWithDeadline {
 
