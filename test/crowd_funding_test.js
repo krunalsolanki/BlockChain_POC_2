@@ -1,31 +1,38 @@
 let CrowdFundingWithDeadline = artifacts.require('./TestCrowdFundingWithDeadline')
 const BigNumber = require('bignumber.js')
-
+ 
 contract('CrowdFundingWithDeadline', function(accounts) {
 
     let contract;
-    let contractCreator = accounts[1];
-    let beneficiary = accounts[2];
+    let contractCreator = accounts[2];
+    let contractCreator2 = accounts[3];
+    let contractCreator3 = accounts[4];
+    let beneficiary = accounts[5];
+    let contractDeployer = accounts[1];
 
+    const TEN_ETH = new BigNumber(10000000000000000000);
+    const NINE_ETH = new BigNumber(9000000000000000000);
     const ONE_ETH = new BigNumber(1000000000000000000);
+    const TWENTY_ETH = new BigNumber(20000000000000000000);
+
     const ERROR_MSG = 'Returned error: VM Exception while processing transaction: revert';
     const ONGOING_STATE = 0;
     const FAILED_STATE = 1;
     const SUCCEEDED_STATE = 2;
     const PAID_OUT_STATE = 3;
 
-   
+  
     beforeEach(async function() {
-        contract = await CrowdFundingWithDeadline.new('funding', 1, 10, beneficiary, {from: contractCreator, gas: 2000000});
+        contract = await CrowdFundingWithDeadline.new('funding', 20, 10, beneficiary, {from: contractDeployer, gas: 2000000});
     // console.error( contract.receipt.gasUsed);
     });
-
+/*
     it('contract is initialized', async function() {
         let contractName = await contract.name.call()
         expect(contractName).to.equal('funding');
 
         let targetAmount = await contract.targetAmount.call()
-        expect(ONE_ETH.isEqualTo(targetAmount)).to.equal(true);
+        expect(TWENTY_ETH.isEqualTo(targetAmount)).to.equal(true);
 
         let fundingDeadline = await contract.fundingDeadline.call()
         expect(fundingDeadline.toNumber()).to.equal(600);
@@ -37,30 +44,50 @@ contract('CrowdFundingWithDeadline', function(accounts) {
         expect(state.valueOf().toNumber()).to.equal(ONGOING_STATE);
 
     });
+    */
+
+    it('funds are contributed Party 1, 2, 3 and paid to beneficiary', async function() {
+      
+        let state = await contract.state.call();
+        expect(state.valueOf().toNumber()).to.equal(ONGOING_STATE);
+         var cnt =   await contract.contribute({value: ONE_ETH, from: contractCreator});
+         await contract.contribute({value: NINE_ETH, from: contractCreator2});
+         await contract.contribute({value: TEN_ETH, from: contractCreator3});
+         state = await contract.state.call();
+         expect(state.valueOf().toNumber()).to.equal(ONGOING_STATE);
+        let totalCollected = await contract.totalCollected.call();
+        expect(TWENTY_ETH.isEqualTo(totalCollected)).to.equal(true);
+        state = await contract.state.call();
+        expect(state.valueOf().toNumber()).to.equal(ONGOING_STATE);
+        await contract.setCurrentTime(601);
+        await contract.finishCrowdFunding();
+        state = await contract.state.call();
+        expect(state.valueOf().toNumber()).to.equal(SUCCEEDED_STATE);
+        await contract.collect();
+        state = await contract.state.call();
+        expect(state.valueOf().toNumber()).to.equal(PAID_OUT_STATE);
+       
+
+    });
+   /*
+    it('funds are contributed Party 1, 2 and failed ', async function() {
+      
+        var cnt =   await contract.contribute({value: ONE_ETH, from: contractCreator});
+        await contract.contribute({value: NINE_ETH, from: contractCreator2});
+    
+      
+       await contract.setCurrentTime(601);
+       await contract.finishCrowdFunding();
+       let state = await contract.state.call();
+        expect(state.valueOf().toNumber()).to.equal(FAILED_STATE);
+        await contract.withdraw({from: contractCreator});
+        await contract.withdraw({from: contractCreator2});
+
+   });*/
+  
+
 
 /*
-    it('Gas price identify', async function() {
-        web3.eth.getGasPrice(function(error, result){ 
-        var gasPrice = Number(result);
-        console.log("Gas Price is " + gasPrice + " wei"); // "10000000000000"
-    
-        // Get Contract instance
-        contract.deployed().then(function(instance) {
-    
-            // Use the keyword 'estimateGas' after the function name to get the gas estimation for this particular function 
-            return instance.giveAwayDividend.estimateGas(1);
-    
-        }).then(function(result) {
-            var gas = Number(result);
-    
-            console.log("gas estimation = " + gas + " units");
-            console.log("gas cost estimation = " + (gas * gasPrice) + " wei");
-            console.log("gas cost estimation = " + TestContract.web3.fromWei((gas * gasPrice), 'ether') + " ether");
-        });
-    });
-});
-*/
-
 
     it('funds are contributed', async function() {
       
@@ -94,6 +121,7 @@ contract('CrowdFundingWithDeadline', function(accounts) {
         expect(ONE_ETH.isEqualTo(contributed)).to.equal(true);
 
         let totalCollected = await contract.totalCollected.call();
+
         expect(ONE_ETH.isEqualTo(totalCollected)).to.equal(true);
 
       //  console.log(       contract.totalCollected.estimateGas());
@@ -193,5 +221,7 @@ contract('CrowdFundingWithDeadline', function(accounts) {
         expect(event.args.totalCollected.toNumber()).to.equal(0);
         expect(event.args.succeeded).to.equal(false);
     });
+   */
 
 });
+ 

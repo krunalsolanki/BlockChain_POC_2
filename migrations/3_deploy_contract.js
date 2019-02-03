@@ -6,6 +6,6 @@ module.exports = function(deployer) {
     "Test campaign",
     1,
     20,
-    "0xfbc4725488A7e0E95bFae19BB674f5cfb1fa5924"
+    "0xCe1C8623f2dABE8d659E0Ee937D0EB46e251c67E"
   );
 };
